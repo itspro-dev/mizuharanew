@@ -1,7 +1,13 @@
+# We're using Debian Slim Buster image
 FROM python:3.8.5-slim-buster
 
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install --no-install-recommends -y \
+ENV PIP_NO_CACHE_DIR 1
+
+RUN sed -i.bak 's/us-west-2\.ec2\.//' /etc/apt/sources.list
+
+# Installing Required Packages
+RUN apt update && apt upgrade -y && \
+    apt install --no-install-recommends -y \
     debian-keyring \
     debian-archive-keyring \
     bash \
@@ -55,10 +61,20 @@ RUN apt-get update && apt-get upgrade -y && \
     libopus-dev \
     && rm -rf /var/lib/apt/lists /var/cache/apt/archives /tmp
 
-RUN python3 -m pip install --upgrade pip
+# Pypi package Repo upgrade
+RUN pip3 install --upgrade pip setuptools
 
-COPY . .
+# Copy Python Requirements to /root/ShinobuRobot
+RUN git clone -b shiken https://github.com/itspro-deb/mizuharanew/ShinobuRobot /root/ShinobuRobot
+WORKDIR /root/ShinobuRobot
 
-RUN python3 -m pip install -U -r requirements.txt
+#Copy config file to /root/ShinobuRobot/ShinobuRobot
+COPY ./ShinobuRobot/sample_config.py ./ShinobuRobot/config.py* /root/ShinobuRobot/ShinobuRobot/
 
-CMD ["python3", "-m", "AyaneRobot"]
+ENV PATH="/home/bot/bin:$PATH"
+
+# Install requirements
+RUN pip3 install -U -r requirements.txt
+
+# Starting Worker
+CMD ["python3","-m","ShinobuRobot"]
